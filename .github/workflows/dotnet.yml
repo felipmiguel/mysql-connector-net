@@ -24,6 +24,7 @@ jobs:
         NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     - name: Authenticate nuget
       run: dotnet nuget add source --username felipmiguel --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/felipmiguel/index.json"
+      working-directory: MySQL.Data\src
     - name: Restore dependencies
       run: dotnet restore
       working-directory: MySQL.Data
