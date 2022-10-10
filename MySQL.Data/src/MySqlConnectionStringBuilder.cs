@@ -41,87 +41,90 @@ namespace MySql.Data.MySqlClient
   /// </summary>
   public sealed class MySqlConnectionStringBuilder : MySqlBaseConnectionStringBuilder
   {
-    static MySqlConnectionStringBuilder()
-    {
-      // Add options shared between classic and X protocols from base class.
-      Options = MySqlBaseConnectionStringBuilder.Options.Clone();
+        static MySqlConnectionStringBuilder()
+        {
+            // Add options shared between classic and X protocols from base class.
+            Options = MySqlBaseConnectionStringBuilder.Options.Clone();
 
-      // Server options
-      Options.Add(new MySqlConnectionStringOption("pipe", "pipe name,pipename", typeof(string), "MYSQL", false,
-        (msb, sender, value) =>
-        {
-          if (!Platform.IsWindows())
-            throw new PlatformNotSupportedException(string.Format(Resources.OptionNotCurrentlySupported, nameof(PipeName)));
-          else
-            msb.SetValue("pipe", value);
-        },
-        (msb, sender) => msb.PipeName));
-      Options.Add(new MySqlConnectionStringOption("compress", "use compression,usecompression", typeof(bool), false, false,
-        (msb, sender, value) => { msb.SetValue("compress", value); }, (msb, sender) => msb.UseCompression));
-      Options.Add(new MySqlConnectionStringOption("allowbatch", "allow batch", typeof(bool), true, false,
-        (msb, sender, value) => { msb.SetValue("allowbatch", value); }, (msb, sender) => msb.AllowBatch));
-      Options.Add(new MySqlConnectionStringOption("logging", null, typeof(bool), false, false,
-        (msb, sender, value) =>
-        {
-          msb.SetValue("logging", value);
-        },
-        (msb, sender) => msb.Logging));
-      Options.Add(new MySqlConnectionStringOption("sharedmemoryname", "shared memory name", typeof(string), "MYSQL", false,
-        (msb, sender, value) =>
-        {
-          if (!Platform.IsWindows())
-            throw new PlatformNotSupportedException(string.Format(Resources.OptionNotCurrentlySupported, nameof(SharedMemoryName)));
-          else
-            msb.SetValue("sharedmemoryname", value);
-        },
-        (msb, sender) => msb.SharedMemoryName));
-      Options.Add(new MySqlConnectionStringOption("defaultcommandtimeout", "command timeout,default command timeout", typeof(uint), (uint)30, false,
-        (msb, sender, value) => { msb.SetValue("defaultcommandtimeout", value); }, (msb, sender) => msb.DefaultCommandTimeout));
-      Options.Add(new MySqlConnectionStringOption("usedefaultcommandtimeoutforef", "use default command timeout for ef", typeof(bool), false, false,
-        (msb, sender, value) => { msb.SetValue("usedefaultcommandtimeoutforef", value); }, (msb, sender) => msb.UseDefaultCommandTimeoutForEF));
-      Options.Add(new MySqlConnectionStringOption("connectiontimeout", "connection timeout,connect timeout", typeof(uint), (uint)15, false,
-        delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender, object Value)
-        {
-          uint value = (uint)Convert.ChangeType(Value, sender.BaseType);
-          // Timeout in milliseconds should not exceed maximum for 32 bit
-          // signed integer (~24 days). We truncate the value if it exceeds
-          // maximum (MySqlCommand.CommandTimeout uses the same technique
-          uint timeout = Math.Min(value, Int32.MaxValue / 1000);
-          if (timeout != value)
-          {
-            MySqlTrace.LogWarning(-1, "Connection timeout value too large ("
-                + value + " seconds). Changed to max. possible value" +
-                +timeout + " seconds)");
-          }
-          msb.SetValue("connectiontimeout", timeout);
-        },
-        (msb, sender) => (uint)msb.values["connectiontimeout"]
-        ));
-      Options.Add(new MySqlConnectionStringOption("allowloadlocalinfile", "allow load local infile", typeof(bool), false, false));
-      Options.Add(new MySqlConnectionStringOption("allowloadlocalinfileinpath", "allow load local infile in path", typeof(string), string.Empty, false));
+            // Server options
+            Options.Add(new MySqlConnectionStringOption("pipe", "pipe name,pipename", typeof(string), "MYSQL", false,
+              (msb, sender, value) =>
+              {
+                  if (!Platform.IsWindows())
+                      throw new PlatformNotSupportedException(string.Format(Resources.OptionNotCurrentlySupported, nameof(PipeName)));
+                  else
+                      msb.SetValue("pipe", value);
+              },
+              (msb, sender) => msb.PipeName));
+            Options.Add(new MySqlConnectionStringOption("compress", "use compression,usecompression", typeof(bool), false, false,
+              (msb, sender, value) => { msb.SetValue("compress", value); }, (msb, sender) => msb.UseCompression));
+            Options.Add(new MySqlConnectionStringOption("allowbatch", "allow batch", typeof(bool), true, false,
+              (msb, sender, value) => { msb.SetValue("allowbatch", value); }, (msb, sender) => msb.AllowBatch));
+            Options.Add(new MySqlConnectionStringOption("logging", null, typeof(bool), false, false,
+              (msb, sender, value) =>
+              {
+                  msb.SetValue("logging", value);
+              },
+              (msb, sender) => msb.Logging));
+            Options.Add(new MySqlConnectionStringOption("sharedmemoryname", "shared memory name", typeof(string), "MYSQL", false,
+              (msb, sender, value) =>
+              {
+                  if (!Platform.IsWindows())
+                      throw new PlatformNotSupportedException(string.Format(Resources.OptionNotCurrentlySupported, nameof(SharedMemoryName)));
+                  else
+                      msb.SetValue("sharedmemoryname", value);
+              },
+              (msb, sender) => msb.SharedMemoryName));
+            Options.Add(new MySqlConnectionStringOption("defaultcommandtimeout", "command timeout,default command timeout", typeof(uint), (uint)30, false,
+              (msb, sender, value) => { msb.SetValue("defaultcommandtimeout", value); }, (msb, sender) => msb.DefaultCommandTimeout));
+            Options.Add(new MySqlConnectionStringOption("usedefaultcommandtimeoutforef", "use default command timeout for ef", typeof(bool), false, false,
+              (msb, sender, value) => { msb.SetValue("usedefaultcommandtimeoutforef", value); }, (msb, sender) => msb.UseDefaultCommandTimeoutForEF));
+            Options.Add(new MySqlConnectionStringOption("connectiontimeout", "connection timeout,connect timeout", typeof(uint), (uint)15, false,
+              delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender, object Value)
+              {
+                  uint value = (uint)Convert.ChangeType(Value, sender.BaseType);
+                  // Timeout in milliseconds should not exceed maximum for 32 bit
+                  // signed integer (~24 days). We truncate the value if it exceeds
+                  // maximum (MySqlCommand.CommandTimeout uses the same technique
+                  uint timeout = Math.Min(value, Int32.MaxValue / 1000);
+                  if (timeout != value)
+                  {
+                      MySqlTrace.LogWarning(-1, "Connection timeout value too large ("
+                    + value + " seconds). Changed to max. possible value" +
+                    +timeout + " seconds)");
+                  }
+                  msb.SetValue("connectiontimeout", timeout);
+              },
+              (msb, sender) => (uint)msb.values["connectiontimeout"]
+              ));
+            Options.Add(new MySqlConnectionStringOption("allowloadlocalinfile", "allow load local infile", typeof(bool), false, false));
+            Options.Add(new MySqlConnectionStringOption("allowloadlocalinfileinpath", "allow load local infile in path", typeof(string), string.Empty, false));
 
-      // Authentication options.
-      Options.Add(new MySqlConnectionStringOption("persistsecurityinfo", "persist security info", typeof(bool), false, false,
-        (msb, sender, value) => { msb.SetValue("persistsecurityinfo", value); }, (msb, sender) => msb.PersistSecurityInfo));
-      Options.Add(new MySqlConnectionStringOption("integratedsecurity", "integrated security", typeof(bool), false, false,
-        delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender, object value)
-        {
-          if (!Platform.IsWindows())
-            throw new MySqlException("IntegratedSecurity is supported on Windows only");
+            // Authentication options.
+            Options.Add(new MySqlConnectionStringOption("persistsecurityinfo", "persist security info", typeof(bool), false, false,
+              (msb, sender, value) => { msb.SetValue("persistsecurityinfo", value); }, (msb, sender) => msb.PersistSecurityInfo));
+            Options.Add(new MySqlConnectionStringOption("integratedsecurity", "integrated security", typeof(bool), false, false,
+              delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender, object value)
+              {
+                  if (!Platform.IsWindows())
+                      throw new MySqlException("IntegratedSecurity is supported on Windows only");
 #if !NETFRAMEWORK
           throw new PlatformNotSupportedException(string.Format(Resources.OptionNotCurrentlySupported, nameof(IntegratedSecurity)));
 #else
-          msb.SetValue("Integrated Security", value.ToString().Equals("SSPI", StringComparison.OrdinalIgnoreCase) ? true : value);
+                  msb.SetValue("Integrated Security", value.ToString().Equals("SSPI", StringComparison.OrdinalIgnoreCase) ? true : value);
 #endif
-        },
-        delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender)
-        {
-          object val = msb.values["integratedsecurity"];
-          return (bool)val;
-        }
-        ));
-      Options.Add(new MySqlConnectionStringOption("allowpublickeyretrieval", null, typeof(bool), false, false,
-        (msb, sender, value) => { msb.SetValue("allowpublickeyretrieval", value); }, (msb, sender) => msb.AllowPublicKeyRetrieval));
+              },
+              delegate (MySqlConnectionStringBuilder msb, MySqlConnectionStringOption sender)
+              {
+                  object val = msb.values["integratedsecurity"];
+                  return (bool)val;
+              }
+              ));
+            Options.Add(new MySqlConnectionStringOption("allowpublickeyretrieval", null, typeof(bool), false, false,
+              (msb, sender, value) => { msb.SetValue("allowpublickeyretrieval", value); }, (msb, sender) => msb.AllowPublicKeyRetrieval));
+      Options.Add(new MySqlConnectionStringOption("authenticationplugins", "Authentication Plugins", typeof(string), string.Empty, false,
+                (msb, sender, value) => { msb.SetValue("authenticationplugins", value); },
+                (msb, sender) => msb.AuthenticationPlugins));
       Options.Add(new MySqlConnectionStringOption("defaultauthenticationplugin", null, typeof(string), string.Empty, false,
         (msb, sender, value) =>
         {
@@ -464,14 +467,25 @@ namespace MySql.Data.MySqlClient
       set { SetValue("defaultauthenticationplugin", value); }
     }
 
-    /// <summary>
-    /// Gets or sets the OCI config file location.
-    /// </summary>
-    /// <remarks>
-    /// The default values vary depending on the OS. On Windows systems the value is '%HOMEDRIVE%%HOMEPATH%\.oci\config' 
-    /// and for Linux/MacOS systems it is '~/.oci/config'.
-    /// </remarks>
+
     [Category("Authentication")]
+    [DisplayName("DefaultAuthenticationPlugin")]
+    [Description("Enables the setting of an authentication plugin that takes precedence over the server-side" +
+                    "default authentication plugin.")]
+        public string AuthenticationPlugins
+        {
+            get { return (string)values["authenticationplugins"]; }
+            set { SetValue("authenticationplugins", value); }
+        }
+
+        /// <summary>
+        /// Gets or sets the OCI config file location.
+        /// </summary>
+        /// <remarks>
+        /// The default values vary depending on the OS. On Windows systems the value is '%HOMEDRIVE%%HOMEPATH%\.oci\config' 
+        /// and for Linux/MacOS systems it is '~/.oci/config'.
+        /// </remarks>
+        [Category("Authentication")]
     [DisplayName("OciConfigFile")]
     [Description("Specifies the OCI configuration file location.")]
     public string OciConfigFile

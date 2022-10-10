@@ -28,69 +28,101 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace MySql.Data.MySqlClient.Authentication
 {
-  internal partial class AuthenticationPluginManager
-  {
-    private static readonly Dictionary<string, PluginInfo> Plugins = new Dictionary<string, PluginInfo>();
-
-    static partial void AuthenticationManagerCtorConfiguration();
-
-    static AuthenticationPluginManager()
+    internal partial class AuthenticationPluginManager
     {
-      Plugins["mysql_native_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlNativePasswordPlugin");
-      Plugins["sha256_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.Sha256AuthenticationPlugin");
-      Plugins["authentication_windows_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlWindowsAuthenticationPlugin");
-      Plugins["caching_sha2_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.CachingSha2AuthenticationPlugin");
-      Plugins["authentication_ldap_sasl_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlSASLPlugin");
-      Plugins["mysql_clear_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlClearPasswordPlugin");
-      Plugins["authentication_kerberos_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.KerberosAuthenticationPlugin");
-      Plugins["authentication_oci_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.OciAuthenticationPlugin");
-      Plugins["authentication_fido_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.FidoAuthenticationPlugin");
+        private static readonly Dictionary<string, PluginInfo> Plugins = new Dictionary<string, PluginInfo>();
 
-      AuthenticationManagerCtorConfiguration();
+        static partial void AuthenticationManagerCtorConfiguration();
+
+        static AuthenticationPluginManager()
+        {
+            Plugins["mysql_native_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlNativePasswordPlugin");
+            Plugins["sha256_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.Sha256AuthenticationPlugin");
+            Plugins["authentication_windows_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlWindowsAuthenticationPlugin");
+            Plugins["caching_sha2_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.CachingSha2AuthenticationPlugin");
+            Plugins["authentication_ldap_sasl_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlSASLPlugin");
+            Plugins["mysql_clear_password"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.MySqlClearPasswordPlugin");
+            Plugins["authentication_kerberos_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.KerberosAuthenticationPlugin");
+            Plugins["authentication_oci_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.OciAuthenticationPlugin");
+            Plugins["authentication_fido_client"] = new PluginInfo("MySql.Data.MySqlClient.Authentication.FidoAuthenticationPlugin");
+
+            AuthenticationManagerCtorConfiguration();
+        }
+
+        public static MySqlAuthenticationPlugin GetPlugin(string method)
+        {
+            ValidateAuthenticationPlugin(method);
+            return CreatePlugin(method);
+        }
+
+        private static MySqlAuthenticationPlugin CreatePlugin(string method)
+        {
+            PluginInfo pi = Plugins[method];
+
+            try
+            {
+                Type t = Type.GetType(pi.Type);
+                MySqlAuthenticationPlugin o = (MySqlAuthenticationPlugin)Activator.CreateInstance(t);
+                return o;
+            }
+            catch (Exception e)
+            {
+                throw new MySqlException(String.Format(Resources.UnableToCreateAuthPlugin, method), e);
+            }
+        }
+
+        public static void ValidateAuthenticationPlugin(string method)
+        {
+            if (!Plugins.ContainsKey(method))
+                throw new MySqlException(String.Format(Resources.AuthenticationMethodNotSupported, method));
+        }
+
+        public static void RegisterPlugin(string method, string type)
+        {
+            Plugins[method] = new PluginInfo(type);
+        }
+
+        internal static void LoadAuthenticationPlugins(string authenticationPlugins)
+        {
+            foreach(var plugin in ParseAuthenticationPlugins(authenticationPlugins))
+            {
+                Plugins[plugin.Key]=plugin.Value;
+            }
+        }
+
+        internal static IDictionary<string, PluginInfo> ParseAuthenticationPlugins(string authenticationPlugins)
+        {
+            Dictionary<string, PluginInfo> result = new Dictionary<string, PluginInfo>();
+            if (string.IsNullOrEmpty(authenticationPlugins))
+                return result;
+            
+            string [] plugins = authenticationPlugins.Split(',');
+            foreach(string plugin in plugins)
+            {
+                string[] pluginParts = plugin.Split(':');
+                if (pluginParts.Length != 2)
+                    throw new MySqlException(string.Format(Resources.AuthenticationPluginNotSupported, plugin));
+                result[pluginParts[0].Trim()] = new PluginInfo(pluginParts[1].Trim().Replace('#', ','));
+            }
+            return result;
+
+        }
     }
 
-    public static MySqlAuthenticationPlugin GetPlugin(string method)
+    struct PluginInfo
     {
-      ValidateAuthenticationPlugin(method);
-      return CreatePlugin(method);
+        public string Type;
+        public Assembly Assembly;
+
+        public PluginInfo(string type)
+        {
+            Type = type;
+            Assembly = null;
+        }
     }
-
-    private static MySqlAuthenticationPlugin CreatePlugin(string method)
-    {
-      PluginInfo pi = Plugins[method];
-
-      try
-      {
-        Type t = Type.GetType(pi.Type);
-        MySqlAuthenticationPlugin o = (MySqlAuthenticationPlugin)Activator.CreateInstance(t);
-        return o;
-      }
-      catch (Exception e)
-      {
-        throw new MySqlException(String.Format(Resources.UnableToCreateAuthPlugin, method), e);
-      }
-    }
-
-    public static void ValidateAuthenticationPlugin(string method)
-    {
-      if (!Plugins.ContainsKey(method))
-        throw new MySqlException(String.Format(Resources.AuthenticationMethodNotSupported, method));
-    }
-  }
-
-  struct PluginInfo
-  {
-    public string Type;
-    public Assembly Assembly;
-
-    public PluginInfo(string type)
-    {
-      Type = type;
-      Assembly = null;
-    }
-  }
 }
