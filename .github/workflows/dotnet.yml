@@ -19,6 +19,11 @@ jobs:
         dotnet-version: |
           6.0.x
           3.1.x
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Authenticate nuget
+      run: dotnet nuget add source --username felipmiguel --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/felipmiguel/index.json"
+      working-directory: MySQL.Data\src
     - name: Restore dependencies
       run: dotnet restore
       working-directory: MySQL.Data
@@ -29,5 +34,9 @@ jobs:
     #   run: dotnet test --no-build --verbosity normal
     #   working-directory: MySQL.Data
     - name: Package
-      run: dotnet pack --no-restore --configuration 'Release' 
-      working-directory: MySQL.Data
+      run: dotnet pack --no-restore --configuration 'Release'
+      working-directory: MySQL.Data\src
+    - name: Publish package
+      run: dotnet nuget push "bin\Release\MySql.Data.8.0.30.nupkg" --source "github"
+      working-directory: MySQL.Data\src
+    
